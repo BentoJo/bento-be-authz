@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  authz-db:
+    image: postgres:18
+    container_name: authz-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+
+  authz-service:
+    build:
+      context: .
+      target: runner 
+    container_name: authz-service
+    restart: always
+    ports:
+      - "50053:50053"
+    env_file:
+      - .env
+
+volumes:
+  postgres_data:
