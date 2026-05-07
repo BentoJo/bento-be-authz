@@ -62,6 +62,20 @@ export async function listPermissionsByIds(
     .where(inArray(permissions.id, permissionIds));
 }
 
+export async function PermissionsExistsByIds(
+  permissionIds: string[],
+): Promise<boolean> {
+  if (permissionIds.length === 0) {
+    return false;
+  }
+
+  const rows = await db
+    .select()
+    .from(permissions)
+    .where(inArray(permissions.id, permissionIds));
+  return rows.length > 0;
+}
+
 export async function createPermission(
   data: NewPermissionRow,
 ): Promise<PermissionRow> {

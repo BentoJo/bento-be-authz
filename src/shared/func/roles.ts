@@ -1,6 +1,7 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import db from '../configs/db.config';
 import { roles } from '../db/schema';
+import { Role } from '../types/types';
 
 export type RoleRow = typeof roles.$inferSelect;
 export type NewRoleRow = typeof roles.$inferInsert;
@@ -14,7 +15,7 @@ export async function listRolesByScope(
   scopeType: RoleRow['scopeType'],
   scopeId: string,
   includeSystemRoles = true,
-): Promise<RoleRow[]> {
+): Promise<Role[]> {
   const conditions = [
     eq(roles.scopeType, scopeType),
     eq(roles.scopeId, scopeId),
@@ -24,9 +25,15 @@ export async function listRolesByScope(
   }
 
   return db
-    .select()
+    .select({
+      id: roles.id,
+      name: roles.name,
+      isSystem: roles.isSystem,
+      isEditable: roles.isEditable,
+      isDeletable: roles.isDeletable,
+    })
     .from(roles)
-    .where(and(...conditions));
+    .where(and(...conditions)) as Promise<Role[]>;
 }
 
 export async function listSystemRoles(
@@ -93,7 +100,15 @@ export async function roleExists(roleId: string): Promise<boolean> {
   return Boolean(row);
 }
 
-export async function createRole(data: NewRoleRow): Promise<RoleRow> {
+export async function roleExistsByName(roleName: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: roles.id })
+    .from(roles)
+    .where(eq(roles.name, roleName));
+  return Boolean(row);
+}
+
+export async function createRoleQuery(data: NewRoleRow): Promise<RoleRow> {
   const [row] = await db.insert(roles).values(data).returning();
   if (!row) {
     throw new Error('Failed to create role');
@@ -102,7 +117,7 @@ export async function createRole(data: NewRoleRow): Promise<RoleRow> {
   return row;
 }
 
-export async function updateRole(
+export async function updateRoleQuery(
   roleId: string,
   data: Partial<NewRoleRow>,
 ): Promise<RoleRow | null> {
@@ -114,7 +129,7 @@ export async function updateRole(
   return row ?? null;
 }
 
-export async function deleteRole(roleId: string): Promise<boolean> {
+export async function deleteRoleQuery(roleId: string): Promise<boolean> {
   const result = await db
     .delete(roles)
     .where(eq(roles.id, roleId))

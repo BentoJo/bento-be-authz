@@ -12,9 +12,9 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>({
     transport: Transport.GRPC,
     options: {
-      package: ['auth', 'common'],
+      package: ['authz', 'common'],
       protoPath: [
-        join(__dirname, '../src/shared/proto/auth.proto'),
+        join(__dirname, '../src/shared/proto/authz.proto'),
         join(__dirname, '../src/shared/proto/common.proto'),
       ],
       url: `0.0.0.0:${grpcPort}`,

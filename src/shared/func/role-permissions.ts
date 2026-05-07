@@ -67,7 +67,7 @@ export async function assignPermissionToRole(
     .onConflictDoNothing();
 }
 
-export async function assignPermissionsToRole(
+export async function assignPermissionsToRoleQuery(
   roleId: string,
   permissionIds: string[],
 ): Promise<void> {

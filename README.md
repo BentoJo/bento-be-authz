@@ -124,3 +124,8 @@ docker compose exec authz-service sh
 ```bash
 docker exec -it authz-db psql -U authz_service -d authz
 ```
+
+- to show tables
+```
+\dt
+```

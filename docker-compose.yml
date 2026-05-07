@@ -7,20 +7,28 @@ services:
     env_file:
       - .env
     ports:
-      - "5433:5432"
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql
+    networks:
+      - backend-network
 
   authz-service:
     build:
       context: .
-      target: runner 
+      target: runner
     container_name: authz-service
     restart: always
     ports:
-      - "50053:50053"
+      - '50053:50053'
     env_file:
       - .env
+    networks:
+      - backend-network
 
 volumes:
   postgres_data:
+
+networks:
+  backend-network:
+    external: true
