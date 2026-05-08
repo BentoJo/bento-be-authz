@@ -29,6 +29,6 @@ async function bootstrap() {
   // 3. Start both transports
   await app.startAllMicroservices();
 
-  console.log(`IAM gRPC microservice running on port ${grpcPort}`);
+  console.log(`AuthZ gRPC microservice running on port ${grpcPort}`);
 }
 void bootstrap();
