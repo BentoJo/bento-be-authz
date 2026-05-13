@@ -104,7 +104,12 @@ This `docker-compose.yml` file sets up a PostgreSQL database and an AuthZ servic
 - build the containers using this command:
 
 ```bash
-docker-compose up --build
+docker-compose up --build -d
+```
+
+- show the server logs
+```bash
+docker logs -f authz-service
 ```
 
 - stop the containers using this command:
@@ -126,6 +131,6 @@ docker exec -it authz-db psql -U authz_service -d authz
 ```
 
 - to show tables
-```
+```bash
 \dt
 ```
