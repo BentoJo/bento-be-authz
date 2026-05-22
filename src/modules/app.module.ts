@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './authorization/authz.module';
+import { RedisModule } from '../modules/redis/redis.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [RedisModule, AuthModule],
 })
 export class AppModule {}

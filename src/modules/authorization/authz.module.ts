@@ -9,8 +9,10 @@ import { DeleteRoleService } from './services/delete-role.service';
 import { AssignPermissionsService } from './services/assign-permission-role.service';
 import { GetPermissionService } from './services/get-permission.service';
 import { RemovePermissionsService } from './services/remove-permission-role.service';
+import { RedisModule } from '../redis/redis.module';
 
 @Module({
+  imports: [RedisModule],
   controllers: [AuthController],
   providers: [
     HealthService,

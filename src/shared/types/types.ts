@@ -71,7 +71,7 @@ export interface GetRolePermissionsResponse {
 export interface ListRolesRequest {
   scopeType: RoleScopeType;
   scopeId: string;
-  includeSystemRoles: boolean;
+  includeSystemRoles?: boolean;
 }
 
 export interface Role {

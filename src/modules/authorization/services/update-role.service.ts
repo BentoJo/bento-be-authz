@@ -10,11 +10,21 @@ import {
   roleExistsByName,
   updateRoleQuery,
 } from '../../../shared/func';
+import { RedisService } from '../../redis/redis.service';
+import {
+  validateName,
+  validateRequired,
+  validateUUID,
+} from '../../../shared/validations';
 
 @Injectable()
 export class UpdateRole {
+  constructor(private readonly redisService: RedisService) {}
+
   async updateRole(data: UpdateRoleRequest): Promise<UpdateRoleResponse> {
     const { roleId, name, isEditable, isDeletable } = data;
+
+    this.validateInput(data);
 
     const existingRole = await getRoleById(roleId);
     if (!existingRole) {
@@ -34,6 +44,13 @@ export class UpdateRole {
       }
     }
 
+    if (!existingRole.isEditable) {
+      throw new RpcException({
+        code: GrpcStatus.FAILED_PRECONDITION,
+        message: 'Role is not editable',
+      });
+    }
+
     const updatedRole = await updateRoleQuery(roleId, {
       name,
       isEditable,
@@ -47,8 +64,73 @@ export class UpdateRole {
       });
     }
 
+    await this.redisService.del(`authz:role_permissions:${roleId}`);
+
     return {
       success: true,
     };
+  }
+
+  private validateInput(data: UpdateRoleRequest): void {
+    const { roleId, name, isEditable, isDeletable } = data;
+
+    const roleIdResult = validateRequired(roleId, 'Role ID');
+    if (!roleIdResult.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: roleIdResult.message,
+      });
+    }
+
+    const roleIdValidation = validateUUID(roleId, 'Role ID');
+    if (!roleIdValidation.valid) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: roleIdValidation.message,
+      });
+    }
+
+    const hasName = name !== undefined;
+    const hasIsEditable = isEditable !== undefined;
+    const hasIsDeletable = isDeletable !== undefined;
+
+    if (!hasName && !hasIsEditable && !hasIsDeletable) {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'At least one field must be provided for update',
+      });
+    }
+
+    if (hasName) {
+      const nameResult = validateRequired(name, 'Name');
+      if (!nameResult.valid) {
+        throw new RpcException({
+          code: GrpcStatus.INVALID_ARGUMENT,
+          message: nameResult.message,
+        });
+      }
+
+      const nameValidation = validateName(name, 'Name');
+      if (!nameValidation.valid) {
+        throw new RpcException({
+          code: GrpcStatus.INVALID_ARGUMENT,
+          message: nameValidation.message,
+        });
+      }
+    }
+
+    if (hasIsEditable && typeof isEditable !== 'boolean') {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'isEditable must be a boolean',
+      });
+    }
+
+    if (hasIsDeletable && typeof isDeletable !== 'boolean') {
+      throw new RpcException({
+        code: GrpcStatus.INVALID_ARGUMENT,
+        message: 'isDeletable must be a boolean',
+      });
+    }
   }
 }
