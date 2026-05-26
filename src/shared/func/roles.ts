@@ -136,3 +136,60 @@ export async function deleteRoleQuery(roleId: string): Promise<boolean> {
     .returning({ id: roles.id });
   return result.length > 0;
 }
+
+export async function getRolesByIdsAndScope(
+  roleIds: string[],
+  scopeType: RoleRow['scopeType'],
+  scopeId: string,
+  includeSystemRoles = true,
+): Promise<UserRole[]> {
+  if (!roleIds.length) return [];
+
+  const conditions = [
+    inArray(roles.id, roleIds),
+    eq(roles.scopeType, scopeType),
+    eq(roles.scopeId, scopeId),
+  ];
+
+  if (!includeSystemRoles) {
+    conditions.push(eq(roles.isSystem, false));
+  }
+
+  const rows = await db
+    .select({
+      id: roles.id,
+      name: roles.name,
+      isSystem: roles.isSystem,
+      permission: permissions.name,
+    })
+    .from(roles)
+    .leftJoin(rolePermissions, eq(roles.id, rolePermissions.roleId))
+    .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
+    .where(and(...conditions));
+
+  const rolesMap = new Map<string, UserRole>();
+
+  for (const row of rows) {
+    if (!rolesMap.has(row.id)) {
+      rolesMap.set(row.id, {
+        id: row.id,
+        name: row.name,
+        permissions: [],
+        isSystem: row.isSystem ?? false,
+      });
+    }
+
+    if (row.permission) {
+      rolesMap.get(row.id)!.permissions.push(row.permission);
+    }
+  }
+
+  return Array.from(rolesMap.values());
+}
+
+export interface UserRole {
+  id: string;
+  name: string;
+  permissions: string[];
+  isSystem: boolean;
+}
