@@ -4,6 +4,7 @@ import {
   CreateRoleResponse,
 } from '../../../shared/types/types';
 import { createRoleQuery, roleExistsByName } from '../../../shared/func/roles';
+import db, { transaction } from '../../../shared/configs/db.config';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import { upsertIamUser } from '../../../shared/func';
@@ -22,7 +23,7 @@ export class CreateRole {
 
     this.validateInput(data);
 
-    const existingRole = await roleExistsByName(name);
+    const existingRole = await roleExistsByName(name, scopeType, scopeId);
     // Check if a role with the same name already exists
     if (existingRole) {
       throw new RpcException({
@@ -31,16 +32,22 @@ export class CreateRole {
       });
     }
 
-    // Ensure the creator exists in the IAM system
-    await upsertIamUser({ userId: createdBy });
+    // Run IAM upsert + role insert in a transaction
+    const newRole = await transaction(async (tx) => {
+      await upsertIamUser({ userId: createdBy }, tx as typeof db);
 
-    // Create the new role
-    const newRole = await createRoleQuery({
-      name,
-      scopeType,
-      scopeId,
-      isSystem,
-      createdBy,
+      const role = await createRoleQuery(
+        {
+          name,
+          scopeType,
+          scopeId,
+          isSystem,
+          createdBy,
+        },
+        tx as typeof db,
+      );
+
+      return role;
     });
 
     if (!newRole) {

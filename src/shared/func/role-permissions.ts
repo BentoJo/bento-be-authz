@@ -70,12 +70,14 @@ export async function assignPermissionToRole(
 export async function assignPermissionsToRoleQuery(
   roleId: string,
   permissionIds: string[],
+  tx?: typeof db,
 ): Promise<void> {
   if (permissionIds.length === 0) {
     return;
   }
 
-  await db
+  const executor = tx ?? db;
+  await executor
     .insert(rolePermissions)
     .values(permissionIds.map((permissionId) => ({ roleId, permissionId })))
     .onConflictDoNothing();
@@ -101,12 +103,14 @@ export async function removePermissionFromRole(
 export async function removePermissionsFromRole(
   roleId: string,
   permissionIds: string[],
+  tx?: typeof db,
 ): Promise<number> {
   if (permissionIds.length === 0) {
     return 0;
   }
 
-  const result = await db
+  const executor = tx ?? db;
+  const result = await executor
     .delete(rolePermissions)
     .where(
       and(

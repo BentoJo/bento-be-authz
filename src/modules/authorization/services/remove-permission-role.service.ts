@@ -10,6 +10,7 @@ import {
   PermissionsExistsByIds,
   removePermissionsFromRole,
 } from '../../../shared/func';
+import db, { transaction } from '../../../shared/configs/db.config';
 import { RedisService } from '../../redis/redis.service';
 import { validateRequired, validateUUID } from '../../../shared/validations';
 
@@ -40,7 +41,24 @@ export class RemovePermissionsService {
       });
     }
 
-    await removePermissionsFromRole(roleId, permissionIds);
+    // Run removal and outbox insert in a transaction
+    await transaction(async (tx) => {
+      await removePermissionsFromRole(roleId, permissionIds, tx as typeof db);
+
+      // const event = {
+      //   eventId: `evt-${Date.now()}-${roleId}`,
+      //   eventType: 'permissions.removed',
+      //   scopeType: existingRole.scopeType,
+      //   scopeId: existingRole.scopeId,
+      //   payload: {
+      //     roleId,
+      //     permissionIds,
+      //   },
+      //   createdAt: new Date(),
+      // };
+
+      // await insertOutboxEvent(event, tx as typeof db);
+    });
 
     // invalidate role permissions cache
     await this.redisService.del(`authz:role_permissions:${roleId}`);

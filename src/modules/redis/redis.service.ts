@@ -59,4 +59,11 @@ export class RedisService implements OnModuleInit {
     const client = await this.ensureClient();
     await client.del(key);
   }
+
+  /*
+  async publish(channel: string, message: string) {
+    const client = await this.ensureClient();
+    return client.publish(channel, message);
+  }
+  */
 }

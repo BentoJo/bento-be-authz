@@ -1,18 +1,27 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import db from '../configs/db.config';
-import { roles } from '../db/schema';
-import { Role } from '../types/types';
+import {
+  permissions,
+  rolePermissions,
+  roles,
+  scopeTypeEnum,
+} from '../db/schema';
+import { Role, UserRole } from '../types/types';
 
 export type RoleRow = typeof roles.$inferSelect;
 export type NewRoleRow = typeof roles.$inferInsert;
 
-export async function getRoleById(roleId: string): Promise<RoleRow | null> {
-  const [row] = await db.select().from(roles).where(eq(roles.id, roleId));
+export async function getRoleById(
+  roleId: string,
+  tx?: typeof db,
+): Promise<RoleRow | null> {
+  const executor = tx ?? db;
+  const [row] = await executor.select().from(roles).where(eq(roles.id, roleId));
   return row ?? null;
 }
 
 export async function listRolesByScope(
-  scopeType: RoleRow['scopeType'],
+  scopeType: (typeof scopeTypeEnum.enumValues)[number],
   scopeId: string,
   includeSystemRoles = true,
 ): Promise<Role[]> {
@@ -20,6 +29,7 @@ export async function listRolesByScope(
     eq(roles.scopeType, scopeType),
     eq(roles.scopeId, scopeId),
   ];
+
   if (!includeSystemRoles) {
     conditions.push(eq(roles.isSystem, false));
   }
@@ -37,7 +47,7 @@ export async function listRolesByScope(
 }
 
 export async function listSystemRoles(
-  scopeType: RoleRow['scopeType'],
+  scopeType: (typeof scopeTypeEnum.enumValues)[number],
   scopeId: string,
 ): Promise<RoleRow[]> {
   return db
@@ -53,7 +63,7 @@ export async function listSystemRoles(
 }
 
 export async function listEditableRoles(
-  scopeType: RoleRow['scopeType'],
+  scopeType: (typeof scopeTypeEnum.enumValues)[number],
   scopeId: string,
 ): Promise<RoleRow[]> {
   return db
@@ -69,7 +79,7 @@ export async function listEditableRoles(
 }
 
 export async function listDeletableRoles(
-  scopeType: RoleRow['scopeType'],
+  scopeType: (typeof scopeTypeEnum.enumValues)[number],
   scopeId: string,
 ): Promise<RoleRow[]> {
   return db
@@ -100,16 +110,35 @@ export async function roleExists(roleId: string): Promise<boolean> {
   return Boolean(row);
 }
 
-export async function roleExistsByName(roleName: string): Promise<boolean> {
+export async function roleExistsByName(
+  roleName: string,
+  scopeType?: (typeof scopeTypeEnum.enumValues)[number],
+  scopeId?: string,
+): Promise<boolean> {
+  const conditions: ReturnType<typeof eq>[] = [eq(roles.name, roleName)];
+
+  // If scope provided, scope the uniqueness check to that scope (recommended)
+  if (scopeType !== undefined) {
+    conditions.push(eq(roles.scopeType, scopeType));
+  }
+
+  if (scopeId !== undefined) {
+    conditions.push(eq(roles.scopeId, scopeId));
+  }
+
   const [row] = await db
     .select({ id: roles.id })
     .from(roles)
-    .where(eq(roles.name, roleName));
+    .where(and(...conditions));
   return Boolean(row);
 }
 
-export async function createRoleQuery(data: NewRoleRow): Promise<RoleRow> {
-  const [row] = await db.insert(roles).values(data).returning();
+export async function createRoleQuery(
+  data: NewRoleRow,
+  tx?: typeof db,
+): Promise<RoleRow> {
+  const executor = tx ?? db;
+  const [row] = await executor.insert(roles).values(data).returning();
   if (!row) {
     throw new Error('Failed to create role');
   }
@@ -120,8 +149,10 @@ export async function createRoleQuery(data: NewRoleRow): Promise<RoleRow> {
 export async function updateRoleQuery(
   roleId: string,
   data: Partial<NewRoleRow>,
+  tx?: typeof db,
 ): Promise<RoleRow | null> {
-  const [row] = await db
+  const executor = tx ?? db;
+  const [row] = await executor
     .update(roles)
     .set(data)
     .where(eq(roles.id, roleId))
@@ -129,8 +160,12 @@ export async function updateRoleQuery(
   return row ?? null;
 }
 
-export async function deleteRoleQuery(roleId: string): Promise<boolean> {
-  const result = await db
+export async function deleteRoleQuery(
+  roleId: string,
+  tx?: typeof db,
+): Promise<boolean> {
+  const executor = tx ?? db;
+  const result = await executor
     .delete(roles)
     .where(eq(roles.id, roleId))
     .returning({ id: roles.id });
@@ -139,7 +174,7 @@ export async function deleteRoleQuery(roleId: string): Promise<boolean> {
 
 export async function getRolesByIdsAndScope(
   roleIds: string[],
-  scopeType: RoleRow['scopeType'],
+  scopeType: (typeof scopeTypeEnum.enumValues)[number],
   scopeId: string,
   includeSystemRoles = true,
 ): Promise<UserRole[]> {
@@ -167,29 +202,30 @@ export async function getRolesByIdsAndScope(
     .leftJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
     .where(and(...conditions));
 
-  const rolesMap = new Map<string, UserRole>();
+  const rolesMap = new Map<
+    string,
+    Omit<UserRole, 'permissions'> & {
+      permissions: Set<string>;
+    }
+  >();
 
   for (const row of rows) {
     if (!rolesMap.has(row.id)) {
       rolesMap.set(row.id, {
         id: row.id,
         name: row.name,
-        permissions: [],
+        permissions: new Set<string>(),
         isSystem: row.isSystem ?? false,
       });
     }
 
     if (row.permission) {
-      rolesMap.get(row.id)!.permissions.push(row.permission);
+      rolesMap.get(row.id)!.permissions.add(row.permission);
     }
   }
 
-  return Array.from(rolesMap.values());
-}
-
-export interface UserRole {
-  id: string;
-  name: string;
-  permissions: string[];
-  isSystem: boolean;
+  return Array.from(rolesMap.values()).map((r) => ({
+    ...r,
+    permissions: Array.from(r.permissions),
+  }));
 }

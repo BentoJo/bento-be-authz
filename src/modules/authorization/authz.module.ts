@@ -9,6 +9,10 @@ import { DeleteRoleService } from './services/delete-role.service';
 import { AssignPermissionsService } from './services/assign-permission-role.service';
 import { GetPermissionService } from './services/get-permission.service';
 import { RemovePermissionsService } from './services/remove-permission-role.service';
+import { GetUserRolesService } from './services/get-roles-by-ids.service';
+import { ListPermissionsService } from './services/list-permissions.service';
+import { SearchRolesService } from './services/search-roles.service';
+import { BatchCheckPermissionsService } from './services/batch-check-permissions.service';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
@@ -24,6 +28,10 @@ import { RedisModule } from '../redis/redis.module';
     AssignPermissionsService,
     RemovePermissionsService,
     GetPermissionService,
+    GetUserRolesService,
+    ListPermissionsService,
+    SearchRolesService,
+    BatchCheckPermissionsService,
   ],
 })
 export class AuthModule {}

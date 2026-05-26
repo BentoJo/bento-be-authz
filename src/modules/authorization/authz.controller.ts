@@ -9,6 +9,10 @@ import { UpdateRole } from './services/update-role.service';
 import { GetPermissionService } from './services/get-permission.service';
 import { AssignPermissionsService } from './services/assign-permission-role.service';
 import { CheckPermissionService } from './services/check-permission.service';
+import { GetUserRolesService } from './services/get-roles-by-ids.service';
+import { ListPermissionsService } from './services/list-permissions.service';
+import { SearchRolesService } from './services/search-roles.service';
+import { BatchCheckPermissionsService } from './services/batch-check-permissions.service';
 import type {
   AssignPermissionsRequest,
   CheckPermissionRequest,
@@ -18,6 +22,9 @@ import type {
   ListRolesRequest,
   RemovePermissionsRequest,
   UpdateRoleRequest,
+  GetUserRolesRequest,
+  SearchRolesRequest,
+  BatchCheckPermissionsRequest,
 } from '../../shared/types/types';
 @Controller()
 export class AuthController {
@@ -31,6 +38,10 @@ export class AuthController {
     private readonly getPermissionService: GetPermissionService,
     private readonly removePermissionRoleService: RemovePermissionsService,
     private readonly checkPermissionService: CheckPermissionService,
+    private readonly getUserRolesService: GetUserRolesService,
+    private readonly listPermissionsService: ListPermissionsService,
+    private readonly searchRolesService: SearchRolesService,
+    private readonly batchCheckPermissionsService: BatchCheckPermissionsService,
   ) {}
 
   /*
@@ -88,5 +99,25 @@ export class AuthController {
   @GrpcMethod('AuthorizationService', 'GetRolePermissions')
   getPermissions(data: GetRolePermissionsRequest) {
     return this.getPermissionService.getRolePermissions(data);
+  }
+
+  @GrpcMethod('AuthorizationService', 'GetRolesByIds')
+  getUserRoles(data: GetUserRolesRequest) {
+    return this.getUserRolesService.getUserRoles(data);
+  }
+
+  @GrpcMethod('AuthorizationService', 'ListPermissions')
+  listPermissions() {
+    return this.listPermissionsService.listPermissions();
+  }
+
+  @GrpcMethod('AuthorizationService', 'SearchRoles')
+  searchRoles(data: SearchRolesRequest) {
+    return this.searchRolesService.searchRoles(data);
+  }
+
+  @GrpcMethod('AuthorizationService', 'BatchCheckPermissions')
+  batchCheckPermissions(data: BatchCheckPermissionsRequest) {
+    return this.batchCheckPermissionsService.batchCheckPermissions(data);
   }
 }

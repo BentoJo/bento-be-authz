@@ -28,7 +28,7 @@ export const scopeTypeEnum = pgEnum('scope_type', [
 export const roles = pgTable('roles', {
   id: uuid('id').primaryKey().defaultRandom(),
 
-  name: varchar('name', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }).notNull().unique(),
 
   scopeType: scopeTypeEnum('scope_type').notNull(),
 
@@ -82,3 +82,35 @@ export const rolePermissions = pgTable(
     }),
   }),
 );
+
+// /**
+//  * Outbox Events Table
+//  */
+// export const outboxEvents = pgTable('outbox_events', {
+//   id: uuid('id').primaryKey().defaultRandom(),
+//   eventId: varchar('event_id', { length: 255 }).notNull().unique(),
+//   eventType: varchar('event_type', { length: 100 }).notNull(),
+//   scopeType: varchar('scope_type', { length: 50 }).notNull(),
+//   scopeId: uuid('scope_id').notNull(),
+//   payload: varchar('payload', { length: 10000 }).notNull(),
+//   isSent: boolean('is_sent').default(false),
+//   sentAt: timestamp('sent_at', { withTimezone: true }),
+//   createdAt: timestamp('created_at', { withTimezone: true })
+//     .defaultNow()
+//     .notNull(),
+// });
+
+// /**
+//  * Event Audit Table
+//  */
+// export const eventAudit = pgTable('event_audit', {
+//   id: uuid('id').primaryKey().defaultRandom(),
+//   outboxEventId: uuid('outbox_event_id')
+//     .notNull()
+//     .references(() => outboxEvents.id),
+//   consumerId: varchar('consumer_id', { length: 255 }).notNull(),
+//   consumedAt: timestamp('consumed_at', { withTimezone: true })
+//     .defaultNow()
+//     .notNull(),
+//   status: varchar('status', { length: 50 }).notNull(),
+// });

@@ -6,6 +6,7 @@ import {
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import { deleteRoleQuery, getRoleById } from '../../../shared/func';
+import db, { transaction } from '../../../shared/configs/db.config';
 import { RedisService } from '../../redis/redis.service';
 import { validateRequired, validateUUID } from '../../../shared/validations';
 
@@ -33,7 +34,28 @@ export class DeleteRoleService {
       });
     }
 
-    const deletedRole = await deleteRoleQuery(roleId);
+    // Delete role and insert outbox event in a transaction
+    const deletedRole = await transaction(async (tx) => {
+      const ok = await deleteRoleQuery(roleId, tx as typeof db);
+      if (!ok) {
+        return false;
+      }
+
+      // const event = {
+      //   eventId: `evt-${Date.now()}-${roleId}`,
+      //   eventType: 'role.deleted',
+      //   scopeType: existingRole.scopeType,
+      //   scopeId: existingRole.scopeId,
+      //   payload: {
+      //     roleId,
+      //   },
+      //   createdAt: new Date(),
+      // };
+
+      // await insertOutboxEvent(event, tx as typeof db);
+
+      return true;
+    });
 
     if (!deletedRole) {
       throw new RpcException({

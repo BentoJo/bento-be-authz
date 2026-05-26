@@ -64,16 +64,19 @@ export async function listPermissionsByIds(
 
 export async function PermissionsExistsByIds(
   permissionIds: string[],
+  tx?: typeof db,
 ): Promise<boolean> {
   if (permissionIds.length === 0) {
     return false;
   }
 
-  const rows = await db
+  const executor: typeof db = tx ?? db;
+  const rows = await executor
     .select()
     .from(permissions)
     .where(inArray(permissions.id, permissionIds));
-  return rows.length > 0;
+  // Ensure ALL requested permission IDs exist
+  return rows.length === permissionIds.length;
 }
 
 export async function createPermission(

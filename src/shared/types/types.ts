@@ -99,3 +99,61 @@ export interface CheckPermissionRequest {
 export interface CheckPermissionResponse {
   allowed: boolean;
 }
+
+export interface GetUserRolesRequest {
+  roleIds: string[];
+  scope: string;
+  scopeId: string;
+  includeArchived?: boolean;
+}
+
+export interface UserRole {
+  id: string;
+  name: string;
+  permissions: string[];
+  isSystem: boolean;
+}
+
+export interface GetUserRolesResponse {
+  scope: string;
+  scopeId: string;
+  roles: UserRole[];
+}
+
+export interface Permission {
+  id: string;
+  name: string;
+  // resource: string;
+  // action: string;
+  // description?: string;
+  // tags?: string[];
+}
+
+export interface ListPermissionsResponse {
+  permissions: Permission[];
+  totalCount?: number;
+}
+
+export interface SearchRolesRequest {
+  scope: string;
+  scopeId: string;
+  query: string;
+  includeSystem?: boolean;
+  limit?: number;
+}
+
+export interface SearchRolesResponse {
+  roles: Role[];
+  totalFound?: number;
+}
+
+export interface BatchCheckPermissionsRequest {
+  userId: string;
+  scope: string;
+  scopeId: string;
+  permissions: string[];
+}
+
+export interface BatchCheckPermissionsResponse {
+  results: Record<string, boolean>;
+}

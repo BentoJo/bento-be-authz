@@ -35,7 +35,11 @@ export class UpdateRole {
     }
 
     if (name && name !== existingRole.name) {
-      const nameExists = await roleExistsByName(name);
+      const nameExists = await roleExistsByName(
+        name,
+        existingRole.scopeType,
+        existingRole.scopeId,
+      );
       if (nameExists) {
         throw new RpcException({
           code: GrpcStatus.FAILED_PRECONDITION,

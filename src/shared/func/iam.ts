@@ -18,17 +18,24 @@ export async function iamUserExists(userId: string): Promise<boolean> {
   return Boolean(row);
 }
 
-export async function createIamUser(data: NewIamRow): Promise<IamRow> {
-  const [row] = await db.insert(iam).values(data).returning();
+export async function createIamUser(
+  data: NewIamRow,
+  tx?: typeof db,
+): Promise<IamRow> {
+  const executor = tx ?? db;
+  const [row] = await executor.insert(iam).values(data).returning();
   if (!row) {
     throw new Error('Failed to create iam row');
   }
 
   return row;
 }
-
-export async function upsertIamUser(data: NewIamRow): Promise<IamRow> {
-  const [row] = await db
+export async function upsertIamUser(
+  data: NewIamRow,
+  tx?: typeof db,
+): Promise<IamRow> {
+  const executor = tx ?? db;
+  const [row] = await executor
     .insert(iam)
     .values(data)
     .onConflictDoUpdate({
@@ -46,20 +53,27 @@ export async function upsertIamUser(data: NewIamRow): Promise<IamRow> {
   return row;
 }
 
-export async function deleteIamUser(userId: string): Promise<boolean> {
-  const result = await db
+export async function deleteIamUser(
+  userId: string,
+  tx?: typeof db,
+): Promise<boolean> {
+  const executor = tx ?? db;
+  const result = await executor
     .delete(iam)
     .where(eq(iam.userId, userId))
     .returning({ userId: iam.userId });
   return result.length > 0;
 }
 
-export async function deleteManyIamUsers(userIds: string[]): Promise<number> {
+export async function deleteManyIamUsers(
+  userIds: string[],
+  tx?: typeof db,
+): Promise<number> {
   if (userIds.length === 0) {
     return 0;
   }
-
-  const result = await db
+  const executor = tx ?? db;
+  const result = await executor
     .delete(iam)
     .where(inArray(iam.userId, userIds))
     .returning({ userId: iam.userId });

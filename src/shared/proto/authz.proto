@@ -23,11 +23,18 @@ service AuthorizationService {
 
   rpc GetRolePermissions(GetRolePermissionsRequest)
   returns (GetRolePermissionsResponse);
+
+  // High-priority endpoints from gap analysis
+  rpc GetRolesByIds(GetRolesByIdsRequest) returns (GetRolesByIdsResponse);
+
+  rpc ListPermissions(ListPermissionsRequest) returns (ListPermissionsResponse);
+
+  rpc SearchRoles(SearchRolesRequest) returns (SearchRolesResponse);
+
+  rpc BatchCheckPermissions(BatchCheckPermissionsRequest) returns (BatchCheckPermissionsResponse);
 }
 
-message HealthCheckRequest {
-
-}
+message HealthCheckRequest { }
 
 message HealthCheckResponse {
   string status = 1;
@@ -141,4 +148,65 @@ message GetRolePermissionsRequest {
 
 message GetRolePermissionsResponse {
   repeated string permissions = 1;
+}
+
+message GetRolesByIdsRequest {
+  repeated string roleIds = 1;
+  string scope = 2;
+  string scopeId = 3;
+  bool includeArchived = 4;
+}
+
+message UserRole {
+  string id = 1;
+  string name = 2;
+  repeated string permissions = 3;
+  map<string, bool> capabilities = 4;
+  bool isSystem = 5;
+}
+
+message GetRolesByIdsResponse {
+  string scope = 1;
+  string scopeId = 2;
+  repeated UserRole roles = 3;
+}
+
+message ListPermissionsRequest {}
+
+message Permission {
+  string id = 1;
+  string name = 2;
+  // string resource = 3;
+  // string action = 4;
+  // string description = 5;
+  // repeated string tags = 6;
+}
+
+message ListPermissionsResponse {
+  repeated Permission permissions = 1;
+  int32 totalCount = 2;
+}
+
+message SearchRolesRequest {
+  string scope = 1;
+  string scopeId = 2;
+  string query = 3;
+  bool includeSystem = 4;
+  int32 limit = 5;
+}
+
+message SearchRolesResponse {
+  repeated Role roles = 1;
+  int32 totalFound = 2;
+}
+
+message BatchCheckPermissionsRequest {
+  string userId = 1;
+  string scope = 2;
+  string scopeId = 3;
+  repeated string permissions = 4;
+}
+
+message BatchCheckPermissionsResponse {
+  map<string, bool> results = 1;
 }
