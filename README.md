@@ -122,6 +122,10 @@ docker-compose down
 
 ```bash
 docker compose exec authz-service sh
+
+// to migrate the database:
+  - npx drizzle-kit generate
+  - npx drizzle-kit push
 ```
 
 - open the Database terminal and run the following command to connect to the database:

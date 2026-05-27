@@ -151,62 +151,101 @@ message GetRolePermissionsResponse {
 }
 
 message GetRolesByIdsRequest {
-  repeated string roleIds = 1;
-  string scope = 2;
-  string scopeId = 3;
-  bool includeArchived = 4;
+  repeated string roleIds         = 1;
+  string          scope           = 2;
+  string          scopeId         = 3;
+  bool            includeArchived = 4;
 }
 
 message UserRole {
-  string id = 1;
-  string name = 2;
-  repeated string permissions = 3;
+  string            id           = 1;
+  string            name         = 2;
+  repeated string   permissions  = 3;
   map<string, bool> capabilities = 4;
-  bool isSystem = 5;
+  bool              isSystem     = 5;
 }
 
 message GetRolesByIdsResponse {
-  string scope = 1;
-  string scopeId = 2;
-  repeated UserRole roles = 3;
+  string            scope   = 1;
+  string            scopeId = 2;
+  repeated UserRole roles   = 3;
 }
 
 message ListPermissionsRequest {}
 
 message Permission {
-  string id = 1;
+  string id   = 1;
   string name = 2;
   // string resource = 3;
-  // string action = 4;
   // string description = 5;
   // repeated string tags = 6;
 }
 
 message ListPermissionsResponse {
   repeated Permission permissions = 1;
-  int32 totalCount = 2;
+  int32               totalCount  = 2;
 }
 
 message SearchRolesRequest {
-  string scope = 1;
-  string scopeId = 2;
-  string query = 3;
-  bool includeSystem = 4;
-  int32 limit = 5;
+  string scope         = 1;
+  string scopeId       = 2;
+  string query         = 3;
+  bool   includeSystem = 4;
+  int32  limit         = 5;
 }
 
 message SearchRolesResponse {
-  repeated Role roles = 1;
-  int32 totalFound = 2;
+  repeated Role roles      = 1;
+  int32         totalFound = 2;
 }
 
 message BatchCheckPermissionsRequest {
-  string userId = 1;
-  string scope = 2;
-  string scopeId = 3;
+  string          userId      = 1;
+  string          scope       = 2;
+  string          scopeId     = 3;
   repeated string permissions = 4;
 }
 
 message BatchCheckPermissionsResponse {
   map<string, bool> results = 1;
 }
+/*
+service WorkspaceRoleService {
+  rpc CreateWorkspaceRoleReference(CreateWorkspaceRoleReferenceRequest)
+  returns (WorkspaceRoleReferenceResponse);
+
+  rpc GetWorkspaceRoleReferences(GetWorkspaceRoleReferencesRequest)
+  returns (ListWorkspaceRoleReferencesResponse);
+
+  rpc GetWorkspaceRoleFromAuthZ(GetWorkspaceRoleFromAuthZRequest)
+  returns (WorkspaceRoleReferenceResponse);
+
+  rpc GetWorkspaceRolesPermissionsFromAuthZ(
+  GetWorkspaceRolesPermissionsFromAuthZRequest)
+  returns (WorkspaceRolePermissionsResponse);
+
+  rpc SyncWorkspaceRolesFromAuthZ(SyncWorkspaceRolesFromAuthZRequest)
+  returns (workspace.common.ActionResponse);
+
+  rpc DeleteWorkspaceRoleReference(DeleteWorkspaceRoleReferenceRequest)
+  returns (workspace.common.ActionResponse);
+
+  rpc ResolveWorkspaceMemberRole(ResolveWorkspaceMemberRoleRequest)
+  returns (ResolveWorkspaceMemberRoleResponse);
+
+  rpc ResolveEffectiveBoardRole(ResolveEffectiveBoardRoleRequest)
+  returns (ResolveEffectiveBoardRoleResponse);
+
+  rpc ResolveEffectivePermissions(ResolveEffectivePermissionsRequest)
+  returns (ResolveEffectivePermissionsResponse);
+
+  rpc CheckPermission(CheckPermissionRequest)
+  returns (CheckPermissionResponse);
+
+  rpc InvalidatePermissionCache(InvalidatePermissionCacheRequest)
+  returns (workspace.common.ActionResponse);
+
+  rpc WarmPermissionCache(WarmPermissionCacheRequest)
+  returns (workspace.common.ActionResponse);
+}
+*/
