@@ -2,19 +2,26 @@ import {
   pgTable,
   uuid,
   varchar,
+  text,
   timestamp,
-  pgEnum,
   boolean,
   primaryKey,
+  pgEnum,
+  index,
 } from 'drizzle-orm/pg-core';
+
+/* =========================
+   IAM
+========================= */
 
 export const iam = pgTable('iam', {
   userId: uuid('user_id').primaryKey(),
 });
 
-/**
- * Scope Type Enum (better than raw varchar)
- */
+/* =========================
+   ENUMS
+========================= */
+
 export const scopeTypeEnum = pgEnum('scope_type', [
   'workspace',
   'organization',
@@ -22,95 +29,138 @@ export const scopeTypeEnum = pgEnum('scope_type', [
   'inventory',
 ]);
 
-/**
- * Roles Table
- */
-export const roles = pgTable('roles', {
-  id: uuid('id').primaryKey().defaultRandom(),
+export const permissionCategoryEnum = pgEnum('permission_category', [
+  'workspace',
+  'security',
+  'teams',
+  'boards',
+  'cards',
+]);
+
+/* =========================
+   PERMISSIONS
+========================= */
+
+export const permissions = pgTable(
+  'permissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    name: varchar('name', { length: 255 }).notNull().unique(),
+
+    description: text('description'),
+
+    category: permissionCategoryEnum('category').notNull(),
+
+    resource: varchar('resource', { length: 100 }).notNull(),
+
+    action: varchar('action', { length: 50 }).notNull(),
+  },
+  (table) => [
+    index('permissions_category_idx').on(table.category),
+
+    index('permissions_resource_idx').on(table.resource),
+
+    index('permissions_action_idx').on(table.action),
+  ],
+);
+
+/* =========================
+   SYSTEM ROLES
+========================= */
+
+export const systemRoles = pgTable('system_roles', {
+  id: uuid('id').defaultRandom().primaryKey(),
 
   name: varchar('name', { length: 255 }).notNull().unique(),
 
-  scopeType: scopeTypeEnum('scope_type').notNull(),
-
-  scopeId: uuid('scope_id').notNull(),
-
-  isSystem: boolean('is_system').default(false),
-
-  isDeletable: boolean('is_deletable').default(true),
-
-  isEditable: boolean('is_editable').default(true),
-
-  createdBy: uuid('created_by')
-    .notNull()
-    .references(() => iam.userId),
-
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
+  isSystem: boolean('is_system').default(true),
 });
 
-/**
- * Permissions Table
- */
-export const permissions = pgTable('permissions', {
-  id: uuid('id').primaryKey().defaultRandom(),
+/* =========================
+   SYSTEM ROLE PERMISSIONS
+========================= */
 
-  name: varchar('name', { length: 255 }).notNull().unique(),
+export const systemRolePermissions = pgTable(
+  'system_role_permissions',
+  {
+    systemRoleId: uuid('system_role_id')
+      .notNull()
+      .references(() => systemRoles.id, {
+        onDelete: 'cascade',
+      }),
 
-  createdAt: timestamp('created_at', { withTimezone: true })
-    .defaultNow()
-    .notNull(),
-});
+    permissionId: uuid('permission_id')
+      .notNull()
+      .references(() => permissions.id, {
+        onDelete: 'cascade',
+      }),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.systemRoleId, table.permissionId],
+    }),
+  ],
+);
 
-/**
- * Role Permissions (Many-to-Many)
- */
+/* =========================
+   ROLES
+========================= */
+
+export const roles = pgTable(
+  'roles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+
+    scopeType: scopeTypeEnum('scope_type').notNull(),
+
+    scopeId: uuid('scope_id').notNull(),
+
+    systemRoleId: uuid('system_role_id').references(() => systemRoles.id),
+
+    name: varchar('name', { length: 255 }).notNull(),
+
+    isSystem: boolean('is_system').default(false),
+
+    isDeletable: boolean('is_deletable').default(true),
+
+    isEditable: boolean('is_editable').default(true),
+
+    createdBy: uuid('created_by').references(() => iam.userId),
+
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    index('roles_scope_idx').on(table.scopeType, table.scopeId),
+
+    index('roles_name_scope_unique').on(table.name, table.scopeId),
+
+    index('roles_system_role_idx').on(table.systemRoleId),
+  ],
+);
+
+/* =========================
+   CUSTOM ROLE PERMISSIONS
+========================= */
+
 export const rolePermissions = pgTable(
   'role_permissions',
   {
     roleId: uuid('role_id')
       .notNull()
-      .references(() => roles.id, { onDelete: 'cascade' }),
+      .references(() => roles.id, {
+        onDelete: 'cascade',
+      }),
 
     permissionId: uuid('permission_id')
       .notNull()
-      .references(() => permissions.id, { onDelete: 'cascade' }),
+      .references(() => permissions.id, {
+        onDelete: 'cascade',
+      }),
   },
-  (table) => ({
-    pk: primaryKey({
+  (table) => [
+    primaryKey({
       columns: [table.roleId, table.permissionId],
     }),
-  }),
+  ],
 );
-
-// /**
-//  * Outbox Events Table
-//  */
-// export const outboxEvents = pgTable('outbox_events', {
-//   id: uuid('id').primaryKey().defaultRandom(),
-//   eventId: varchar('event_id', { length: 255 }).notNull().unique(),
-//   eventType: varchar('event_type', { length: 100 }).notNull(),
-//   scopeType: varchar('scope_type', { length: 50 }).notNull(),
-//   scopeId: uuid('scope_id').notNull(),
-//   payload: varchar('payload', { length: 10000 }).notNull(),
-//   isSent: boolean('is_sent').default(false),
-//   sentAt: timestamp('sent_at', { withTimezone: true }),
-//   createdAt: timestamp('created_at', { withTimezone: true })
-//     .defaultNow()
-//     .notNull(),
-// });
-
-// /**
-//  * Event Audit Table
-//  */
-// export const eventAudit = pgTable('event_audit', {
-//   id: uuid('id').primaryKey().defaultRandom(),
-//   outboxEventId: uuid('outbox_event_id')
-//     .notNull()
-//     .references(() => outboxEvents.id),
-//   consumerId: varchar('consumer_id', { length: 255 }).notNull(),
-//   consumedAt: timestamp('consumed_at', { withTimezone: true })
-//     .defaultNow()
-//     .notNull(),
-//   status: varchar('status', { length: 50 }).notNull(),
-// });
