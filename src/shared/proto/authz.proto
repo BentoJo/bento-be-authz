@@ -220,6 +220,16 @@ message BatchCheckPermissionsResponse {
   map<string, bool> results = 1;
 }
 
+message CreateSystemRolesRequest {
+  string scopeType = 1;
+  string scopeId = 2;
+  string createdBy = 3;
+}
+
+message CreateSystemRolesResponse {
+  repeated Role roles = 1;
+}
+
 /*
  service WorkspaceRoleService {
  rpc CreateWorkspaceRoleReference(CreateWorkspaceRoleReferenceRequest)

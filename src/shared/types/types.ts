@@ -155,3 +155,13 @@ export interface BatchCheckPermissionsRequest {
 export interface BatchCheckPermissionsResponse {
   results: Record<string, boolean>;
 }
+
+export interface CreateSystemRolesRequest {
+  scopeType: RoleScopeType;
+  scopeId: string;
+  createdBy: string;
+}
+
+export interface CreateSystemRolesResponse {
+  roles: Role[];
+}
