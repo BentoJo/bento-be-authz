@@ -14,6 +14,7 @@ import { ListPermissionsService } from './services/list-permissions.service';
 import { SearchRolesService } from './services/search-roles.service';
 import { BatchCheckPermissionsService } from './services/batch-check-permissions.service';
 import { CreateSystemRoleService } from './services/create-system-roles.service';
+import { GetSystemRolesService } from './services/get-system-roles.service';
 import type {
   AssignPermissionsRequest,
   CheckPermissionRequest,
@@ -45,6 +46,7 @@ export class AuthController {
     private readonly searchRolesService: SearchRolesService,
     private readonly batchCheckPermissionsService: BatchCheckPermissionsService,
     private readonly createSystemRoleService: CreateSystemRoleService,
+    private readonly getSystemRolesService: GetSystemRolesService,
   ) {}
 
   /*
@@ -127,5 +129,10 @@ export class AuthController {
   @GrpcMethod('AuthorizationService', 'CreateSystemRoles')
   createSystemRoles(data: CreateSystemRolesRequest) {
     return this.createSystemRoleService.createSystemRole(data);
+  }
+
+  @GrpcMethod('AuthorizationService', 'GetStaticRoles')
+  getSystemRoles() {
+    return this.getSystemRolesService.getSystemRoles();
   }
 }

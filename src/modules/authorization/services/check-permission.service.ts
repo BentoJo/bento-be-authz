@@ -108,7 +108,7 @@ export class CheckPermissionService {
       });
     }
 
-    if (userId !== undefined) {
+    if (typeof userId === 'string' && userId.trim() !== '') {
       const userIdValidation = validateUUID(userId, 'User ID');
       if (!userIdValidation.valid) {
         throw new RpcException({
@@ -118,7 +118,7 @@ export class CheckPermissionService {
       }
     }
 
-    if (scopeType !== undefined) {
+    if (typeof scopeType === 'string' && scopeType.trim() !== '') {
       const scopeTypeValidation = validateEnum(
         scopeType,
         RoleScopeTypes,
@@ -132,7 +132,7 @@ export class CheckPermissionService {
       }
     }
 
-    if (scopeId !== undefined) {
+    if (typeof scopeId === 'string' && scopeId.trim() !== '') {
       const scopeIdValidation = validateUUID(scopeId, 'Scope ID');
       if (!scopeIdValidation.valid) {
         throw new RpcException({
@@ -142,7 +142,7 @@ export class CheckPermissionService {
       }
     }
 
-    if (resourceType !== undefined) {
+    if (typeof resourceType === 'string' && resourceType.trim() !== '') {
       const resourceTypeValidation = validateStringLength(
         resourceType,
         1,
@@ -157,7 +157,7 @@ export class CheckPermissionService {
       }
     }
 
-    if (resourceId !== undefined) {
+    if (typeof resourceId === 'string' && resourceId.trim() !== '') {
       const resourceIdValidation = validateUUID(resourceId, 'Resource ID');
       if (!resourceIdValidation.valid) {
         throw new RpcException({

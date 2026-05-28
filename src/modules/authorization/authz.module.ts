@@ -15,6 +15,7 @@ import { SearchRolesService } from './services/search-roles.service';
 import { BatchCheckPermissionsService } from './services/batch-check-permissions.service';
 import { CreateSystemRoleService } from './services/create-system-roles.service';
 import { RedisModule } from '../redis/redis.module';
+import { GetSystemRolesService } from './services/get-system-roles.service';
 
 @Module({
   imports: [RedisModule],
@@ -34,6 +35,7 @@ import { RedisModule } from '../redis/redis.module';
     SearchRolesService,
     BatchCheckPermissionsService,
     CreateSystemRoleService,
+    GetSystemRolesService,
   ],
 })
 export class AuthModule {}

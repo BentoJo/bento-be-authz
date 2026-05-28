@@ -87,13 +87,13 @@ export interface ListRolesResponse {
 }
 
 export interface CheckPermissionRequest {
-  userId: string;
+  userId?: string;
   roleId: string;
   permission: string;
-  scopeType: string;
-  scopeId: string;
-  resourceType: string;
-  resourceId: string;
+  scopeType?: string;
+  scopeId?: string;
+  resourceType?: string;
+  resourceId?: string;
 }
 
 export interface CheckPermissionResponse {
@@ -164,4 +164,13 @@ export interface CreateSystemRolesRequest {
 
 export interface CreateSystemRolesResponse {
   roles: Role[];
+}
+
+export interface StaticRole {
+  id: string;
+  name: string;
+}
+
+export interface GetStaticRolesResponse {
+  roles: StaticRole[];
 }

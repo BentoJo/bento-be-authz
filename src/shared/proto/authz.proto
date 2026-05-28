@@ -1,6 +1,7 @@
 syntax = "proto3";
 package authz;
 
+
 service AuthorizationService {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
   rpc GetStaticRoles(GetStaticRolesRequest) returns (GetStaticRolesResponse);
@@ -33,6 +34,8 @@ service AuthorizationService {
   rpc SearchRoles(SearchRolesRequest) returns (SearchRolesResponse);
 
   rpc BatchCheckPermissions(BatchCheckPermissionsRequest) returns (BatchCheckPermissionsResponse);
+
+  rpc CreateSystemRoles(CreateSystemRolesRequest) returns (CreateSystemRolesResponse);
 }
 
 message HealthCheckRequest { }
