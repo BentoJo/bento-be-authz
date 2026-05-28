@@ -3,6 +3,7 @@ package authz;
 
 service AuthorizationService {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc GetStaticRoles(GetStaticRolesRequest) returns (GetStaticRolesResponse);
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
 
@@ -38,6 +39,17 @@ message HealthCheckRequest { }
 
 message HealthCheckResponse {
   string status = 1;
+}
+
+message GetStaticRolesRequest {}
+
+message StaticRole {
+  string id   = 1;
+  string name = 2;
+}
+
+message GetStaticRolesResponse {
+  repeated StaticRole roles = 1;
 }
 
 message ListRolesRequest {
@@ -200,50 +212,51 @@ message SearchRolesResponse {
 }
 
 message BatchCheckPermissionsRequest {
-  string roleId = 1;
+  string          roleId      = 1;
   repeated string permissions = 2;
 }
 
 message BatchCheckPermissionsResponse {
   map<string, bool> results = 1;
 }
+
 /*
-service WorkspaceRoleService {
-  rpc CreateWorkspaceRoleReference(CreateWorkspaceRoleReferenceRequest)
-  returns (WorkspaceRoleReferenceResponse);
+ service WorkspaceRoleService {
+ rpc CreateWorkspaceRoleReference(CreateWorkspaceRoleReferenceRequest)
+ returns (WorkspaceRoleReferenceResponse);
 
-  rpc GetWorkspaceRoleReferences(GetWorkspaceRoleReferencesRequest)
-  returns (ListWorkspaceRoleReferencesResponse);
+ rpc GetWorkspaceRoleReferences(GetWorkspaceRoleReferencesRequest)
+ returns (ListWorkspaceRoleReferencesResponse);
 
-  rpc GetWorkspaceRoleFromAuthZ(GetWorkspaceRoleFromAuthZRequest)
-  returns (WorkspaceRoleReferenceResponse);
+ rpc GetWorkspaceRoleFromAuthZ(GetWorkspaceRoleFromAuthZRequest)
+ returns (WorkspaceRoleReferenceResponse);
 
-  rpc GetWorkspaceRolesPermissionsFromAuthZ(
-  GetWorkspaceRolesPermissionsFromAuthZRequest)
-  returns (WorkspaceRolePermissionsResponse);
+ rpc GetWorkspaceRolesPermissionsFromAuthZ(
+ GetWorkspaceRolesPermissionsFromAuthZRequest)
+ returns (WorkspaceRolePermissionsResponse);
 
-  rpc SyncWorkspaceRolesFromAuthZ(SyncWorkspaceRolesFromAuthZRequest)
-  returns (workspace.common.ActionResponse);
+ rpc SyncWorkspaceRolesFromAuthZ(SyncWorkspaceRolesFromAuthZRequest)
+ returns (workspace.common.ActionResponse);
 
-  rpc DeleteWorkspaceRoleReference(DeleteWorkspaceRoleReferenceRequest)
-  returns (workspace.common.ActionResponse);
+ rpc DeleteWorkspaceRoleReference(DeleteWorkspaceRoleReferenceRequest)
+ returns (workspace.common.ActionResponse);
 
-  rpc ResolveWorkspaceMemberRole(ResolveWorkspaceMemberRoleRequest)
-  returns (ResolveWorkspaceMemberRoleResponse);
+ rpc ResolveWorkspaceMemberRole(ResolveWorkspaceMemberRoleRequest)
+ returns (ResolveWorkspaceMemberRoleResponse);
 
-  rpc ResolveEffectiveBoardRole(ResolveEffectiveBoardRoleRequest)
-  returns (ResolveEffectiveBoardRoleResponse);
+ rpc ResolveEffectiveBoardRole(ResolveEffectiveBoardRoleRequest)
+ returns (ResolveEffectiveBoardRoleResponse);
 
-  rpc ResolveEffectivePermissions(ResolveEffectivePermissionsRequest)
-  returns (ResolveEffectivePermissionsResponse);
+ rpc ResolveEffectivePermissions(ResolveEffectivePermissionsRequest)
+ returns (ResolveEffectivePermissionsResponse);
 
-  rpc CheckPermission(CheckPermissionRequest)
-  returns (CheckPermissionResponse);
+ rpc CheckPermission(CheckPermissionRequest)
+ returns (CheckPermissionResponse);
 
-  rpc InvalidatePermissionCache(InvalidatePermissionCacheRequest)
-  returns (workspace.common.ActionResponse);
+ rpc InvalidatePermissionCache(InvalidatePermissionCacheRequest)
+ returns (workspace.common.ActionResponse);
 
-  rpc WarmPermissionCache(WarmPermissionCacheRequest)
-  returns (workspace.common.ActionResponse);
-}
-*/
+ rpc WarmPermissionCache(WarmPermissionCacheRequest)
+ returns (workspace.common.ActionResponse);
+ }
+ */
