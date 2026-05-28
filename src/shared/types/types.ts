@@ -148,9 +148,7 @@ export interface SearchRolesResponse {
 }
 
 export interface BatchCheckPermissionsRequest {
-  userId: string;
-  scope: string;
-  scopeId: string;
+  roleId: string;
   permissions: string[];
 }
 
