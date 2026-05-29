@@ -28,6 +28,7 @@ import type {
   SearchRolesRequest,
   BatchCheckPermissionsRequest,
   CreateSystemRolesRequest,
+  GetStaticRolesRequest,
 } from '../../shared/types/types';
 @Controller()
 export class AuthController {
@@ -132,7 +133,7 @@ export class AuthController {
   }
 
   @GrpcMethod('AuthorizationService', 'GetStaticRoles')
-  getSystemRoles() {
-    return this.getSystemRolesService.getSystemRoles();
+  getSystemRoles(data: GetStaticRolesRequest) {
+    return this.getSystemRolesService.getSystemRoles(data);
   }
 }

@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
-import { GetStaticRolesResponse } from '../../../shared/types/types';
+import {
+  GetStaticRolesRequest,
+  GetStaticRolesResponse,
+} from '../../../shared/types/types';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import db from '../../../shared/configs/db.config';
-import { systemRoles } from '../../../shared/db/schema';
+import { roles } from '../../../shared/db/schema';
+import { eq, and } from 'drizzle-orm';
 
 @Injectable()
 export class GetSystemRolesService {
-  async getSystemRoles(): Promise<GetStaticRolesResponse> {
+  async getSystemRoles(
+    data: GetStaticRolesRequest,
+  ): Promise<GetStaticRolesResponse> {
     const listRoles = await db
-      .select({ id: systemRoles.id, name: systemRoles.name })
-      .from(systemRoles);
+      .select({ id: roles.id, name: roles.name })
+      .from(roles)
+      .where(and(eq(roles.isSystem, true), eq(roles.scopeId, data.scopeId)));
 
     if (!listRoles) {
       throw new RpcException({

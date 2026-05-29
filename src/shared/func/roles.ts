@@ -14,10 +14,20 @@ export type NewRoleRow = typeof roles.$inferInsert;
 type DB = NodePgDatabase;
 export async function getRoleById(
   roleId: string,
+  scopeId?: string,
   tx?: DB,
 ): Promise<RoleRow | null> {
+  const conditions = [eq(roles.id, roleId)];
+
+  if (scopeId !== undefined) {
+    conditions.push(eq(roles.scopeId, scopeId));
+  }
+
   const executor = tx ?? db;
-  const [row] = await executor.select().from(roles).where(eq(roles.id, roleId));
+  const [row] = await executor
+    .select()
+    .from(roles)
+    .where(and(...conditions));
   return row ?? null;
 }
 

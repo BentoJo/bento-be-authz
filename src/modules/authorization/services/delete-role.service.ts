@@ -19,7 +19,7 @@ export class DeleteRoleService {
 
     this.validateInput(roleId);
 
-    const existingRole = await getRoleById(roleId);
+    const existingRole = await getRoleById(roleId, data.scopeId);
     if (!existingRole) {
       throw new RpcException({
         code: GrpcStatus.NOT_FOUND,

@@ -30,7 +30,7 @@ export class CheckPermissionService {
 
     this.validateInput(data);
 
-    const existingRole = await getRoleById(roleId);
+    const existingRole = await getRoleById(roleId, data.scopeId);
 
     if (!existingRole) {
       throw new RpcException({

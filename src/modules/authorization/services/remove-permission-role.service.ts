@@ -21,11 +21,11 @@ export class RemovePermissionsService {
   async removePermissions(
     data: RemovePermissionsRequest,
   ): Promise<RemovePermissionsResponse> {
-    const { roleId, permissionIds } = data;
+    const { roleId, permissionIds, scopeId } = data;
 
     this.validateInput(data);
 
-    const existingRole = await getRoleById(roleId);
+    const existingRole = await getRoleById(roleId, scopeId);
     if (!existingRole) {
       throw new RpcException({
         code: GrpcStatus.NOT_FOUND,

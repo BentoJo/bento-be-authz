@@ -22,11 +22,11 @@ export class UpdateRole {
   constructor(private readonly redisService: RedisService) {}
 
   async updateRole(data: UpdateRoleRequest): Promise<UpdateRoleResponse> {
-    const { roleId, name, isEditable, isDeletable } = data;
+    const { roleId, name, isEditable, isDeletable, scopeId } = data;
 
     this.validateInput(data);
 
-    const existingRole = await getRoleById(roleId);
+    const existingRole = await getRoleById(roleId, scopeId);
     if (!existingRole) {
       throw new RpcException({
         code: GrpcStatus.NOT_FOUND,
