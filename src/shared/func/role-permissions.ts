@@ -1,6 +1,10 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import db from '../configs/db.config';
-import { permissions, rolePermissions } from '../db/schema';
+import {
+  permissions,
+  rolePermissions,
+  systemRolePermissions,
+} from '../db/schema';
 
 export type RolePermissionRow = typeof rolePermissions.$inferSelect;
 export type NewRolePermissionRow = typeof rolePermissions.$inferInsert;
@@ -11,6 +15,23 @@ export async function getPermissionsForRole(roleId: string): Promise<string[]> {
     .from(rolePermissions)
     .innerJoin(permissions, eq(rolePermissions.permissionId, permissions.id))
     .where(eq(rolePermissions.roleId, roleId));
+
+  return rows.map((row) => row.permissionName);
+}
+
+export async function getPermissionsForSystemRole(
+  systemRoleId: string,
+): Promise<string[]> {
+  if (!systemRoleId) return [];
+
+  const rows = await db
+    .select({ permissionName: permissions.name })
+    .from(systemRolePermissions)
+    .innerJoin(
+      permissions,
+      eq(systemRolePermissions.permissionId, permissions.id),
+    )
+    .where(eq(systemRolePermissions.systemRoleId, systemRoleId));
 
   return rows.map((row) => row.permissionName);
 }

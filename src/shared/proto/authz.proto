@@ -1,11 +1,13 @@
 syntax = "proto3";
 package authz;
 
-
 service AuthorizationService {
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+
   rpc GetStaticRoles(GetStaticRolesRequest) returns (GetStaticRolesResponse);
+
   rpc ListRoles(ListRolesRequest) returns (ListRolesResponse);
+
   rpc CheckPermission(CheckPermissionRequest) returns (CheckPermissionResponse);
 
   rpc CreateRole(CreateRoleRequest)
@@ -38,7 +40,7 @@ service AuthorizationService {
   rpc CreateSystemRoles(CreateSystemRolesRequest) returns (CreateSystemRolesResponse);
 }
 
-message HealthCheckRequest { }
+message HealthCheckRequest {}
 
 message HealthCheckResponse {
   string status = 1;
@@ -80,19 +82,11 @@ message ListRolesResponse {
 }
 
 message CheckPermissionRequest {
-  string userId = 1;
+  string roleId = 1;
 
-  string roleId = 2;
+  string permission = 2;
 
-  string permission = 3;
-
-  string scopeType = 4;
-
-  string scopeId = 5;
-
-  string resourceType = 6;
-
-  string resourceId = 7;
+  string scopeId = 3;
 }
 
 message CheckPermissionResponse {
@@ -225,7 +219,7 @@ message BatchCheckPermissionsResponse {
 
 message CreateSystemRolesRequest {
   string scopeType = 1;
-  string scopeId = 2;
+  string scopeId   = 2;
   string createdBy = 3;
 }
 

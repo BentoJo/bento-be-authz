@@ -7,13 +7,14 @@ import {
   scopeTypeEnum,
 } from '../db/schema';
 import { Role, UserRole } from '../types/types';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
 export type RoleRow = typeof roles.$inferSelect;
 export type NewRoleRow = typeof roles.$inferInsert;
-
+type DB = NodePgDatabase;
 export async function getRoleById(
   roleId: string,
-  tx?: typeof db,
+  tx?: DB,
 ): Promise<RoleRow | null> {
   const executor = tx ?? db;
   const [row] = await executor.select().from(roles).where(eq(roles.id, roleId));
@@ -135,7 +136,7 @@ export async function roleExistsByName(
 
 export async function createRoleQuery(
   data: NewRoleRow,
-  tx?: typeof db,
+  tx?: DB,
 ): Promise<RoleRow> {
   const executor = tx ?? db;
   const [row] = await executor.insert(roles).values(data).returning();
@@ -149,7 +150,7 @@ export async function createRoleQuery(
 export async function updateRoleQuery(
   roleId: string,
   data: Partial<NewRoleRow>,
-  tx?: typeof db,
+  tx?: DB,
 ): Promise<RoleRow | null> {
   const executor = tx ?? db;
   const [row] = await executor
@@ -162,7 +163,7 @@ export async function updateRoleQuery(
 
 export async function deleteRoleQuery(
   roleId: string,
-  tx?: typeof db,
+  tx?: DB,
 ): Promise<boolean> {
   const executor = tx ?? db;
   const result = await executor

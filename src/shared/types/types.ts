@@ -87,13 +87,9 @@ export interface ListRolesResponse {
 }
 
 export interface CheckPermissionRequest {
-  userId?: string;
   roleId: string;
+  scopeId: string;
   permission: string;
-  scopeType?: string;
-  scopeId?: string;
-  resourceType?: string;
-  resourceId?: string;
 }
 
 export interface CheckPermissionResponse {
@@ -150,6 +146,7 @@ export interface SearchRolesResponse {
 export interface BatchCheckPermissionsRequest {
   roleId: string;
   permissions: string[];
+  scopeId: string;
 }
 
 export interface BatchCheckPermissionsResponse {

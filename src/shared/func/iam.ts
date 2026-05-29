@@ -1,9 +1,11 @@
 import { eq, inArray } from 'drizzle-orm';
 import db from '../configs/db.config';
 import { iam } from '../db/schema';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
 export type IamRow = typeof iam.$inferSelect;
 export type NewIamRow = typeof iam.$inferInsert;
+type DB = NodePgDatabase;
 
 export async function getIamUserById(userId: string) {
   const [row] = await db.select().from(iam).where(eq(iam.userId, userId));
@@ -18,10 +20,7 @@ export async function iamUserExists(userId: string): Promise<boolean> {
   return Boolean(row);
 }
 
-export async function createIamUser(
-  data: NewIamRow,
-  tx?: typeof db,
-): Promise<IamRow> {
+export async function createIamUser(data: NewIamRow, tx?: DB): Promise<IamRow> {
   const executor = tx ?? db;
   const [row] = await executor.insert(iam).values(data).returning();
   if (!row) {
@@ -30,10 +29,7 @@ export async function createIamUser(
 
   return row;
 }
-export async function upsertIamUser(
-  data: NewIamRow,
-  tx?: typeof db,
-): Promise<IamRow> {
+export async function upsertIamUser(data: NewIamRow, tx?: DB): Promise<IamRow> {
   const executor = tx ?? db;
   const [row] = await executor
     .insert(iam)
@@ -53,10 +49,7 @@ export async function upsertIamUser(
   return row;
 }
 
-export async function deleteIamUser(
-  userId: string,
-  tx?: typeof db,
-): Promise<boolean> {
+export async function deleteIamUser(userId: string, tx?: DB): Promise<boolean> {
   const executor = tx ?? db;
   const result = await executor
     .delete(iam)
@@ -67,7 +60,7 @@ export async function deleteIamUser(
 
 export async function deleteManyIamUsers(
   userIds: string[],
-  tx?: typeof db,
+  tx?: DB,
 ): Promise<number> {
   if (userIds.length === 0) {
     return 0;

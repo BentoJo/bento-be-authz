@@ -3,14 +3,9 @@ import {
   CreateSystemRolesRequest,
   CreateSystemRolesResponse,
 } from '../../../shared/types/types';
-import {
-  createRoleQuery,
-  roleExistsByName,
-  NewRoleRow,
-} from '../../../shared/func/roles';
 import { systemRoles, roles } from '../../../shared/db/schema';
 import { and, eq } from 'drizzle-orm';
-import db, { transaction } from '../../../shared/configs/db.config';
+import db from '../../../shared/configs/db.config';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
 import { upsertIamUser } from '../../../shared/func';
@@ -30,34 +25,28 @@ export class CreateSystemRoleService {
 
     this.validateInput(data);
 
-    // load system role names from the system_roles table
     const systemRoleRows = await db
-      .select({ name: systemRoles.name })
+      .select({
+        id: systemRoles.id,
+        name: systemRoles.name,
+      })
       .from(systemRoles);
 
-    const systemRoleNames = systemRoleRows.map((r) => r.name);
+    await db.transaction(async (tx) => {
+      await upsertIamUser({ userId: createdBy }, tx);
 
-    // create missing system roles inside a transaction
-    await transaction(async (tx) => {
-      await upsertIamUser({ userId: createdBy }, tx as typeof db);
+      const payload = systemRoleRows.map((role) => ({
+        scopeType,
+        scopeId,
+        systemRoleId: role.id,
+        name: role.name,
+        isSystem: true,
+        createdBy,
+      }));
 
-      for (const roleName of systemRoleNames) {
-        const exists = await roleExistsByName(roleName, scopeType, scopeId);
-        if (exists) continue;
-
-        const payload: NewRoleRow = {
-          name: roleName,
-          scopeType,
-          scopeId,
-          isSystem: true,
-          createdBy,
-        };
-
-        await createRoleQuery(payload, tx as typeof db);
-      }
+      await tx.insert(roles).values(payload).onConflictDoNothing();
     });
 
-    // return the system roles for this scope
     const created = await db
       .select({
         id: roles.id,
@@ -65,6 +54,7 @@ export class CreateSystemRoleService {
         isSystem: roles.isSystem,
         isEditable: roles.isEditable,
         isDeletable: roles.isDeletable,
+        systemRoleId: roles.systemRoleId,
       })
       .from(roles)
       .where(
@@ -79,6 +69,7 @@ export class CreateSystemRoleService {
       roles: created.map((r) => ({
         id: r.id,
         name: r.name,
+        systemRoleId: r.systemRoleId ?? '',
         isSystem: Boolean(r.isSystem),
         isEditable: Boolean(r.isEditable),
         isDeletable: Boolean(r.isDeletable),
