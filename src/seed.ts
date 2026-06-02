@@ -53,6 +53,8 @@ type PermissionSeed = {
 ========================= */
 
 const PERMISSION_LIST: PermissionSeed[] = [
+  { name: 'workspace:roles:read', category: 'security', resource: 'roles', action: 'read', description: 'Allows viewing workspace roles and their permissions.' },
+  { name: 'workspace:team:read', category: 'teams', resource: 'team', action: 'read', description: 'Allows viewing teams within the workspace.' },
   /* =========================================================
      WORKSPACE SETTINGS
   ========================================================= */
@@ -431,6 +433,8 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ).map((p) => p.name),
 
   EDITOR: [
+    'workspace:roles:read',
+    'workspace:team:read',
     'workspace:teams:read',
     'workspace:teams:manage',
     'workspace:boards:read',
@@ -455,6 +459,8 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ],
 
   VIEWER: [
+    'workspace:roles:read',
+    'workspace:team:read',
     'workspace:members:read',
     'workspace:teams:read',
     'workspace:boards:read',
