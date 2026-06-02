@@ -2,10 +2,36 @@ import { inArray } from 'drizzle-orm';
 import db from './shared/configs/db.config';
 
 import {
+  iam,
   permissions,
+  rolePermissions,
+  roles,
   systemRolePermissions,
   systemRoles,
 } from './shared/db/schema';
+
+/* =========================================================
+   SHARED CONTRACT — paste VERBATIM (identical across all 3 seeds)
+   Do NOT change ids/keys/names.
+========================================================= */
+import { createHash } from 'node:crypto';
+export function detUuid(name: string): string {
+  const h = createHash('sha1').update(`bento:${name}`).digest('hex');
+  const variant = ((parseInt(h.slice(16, 18), 16) & 0x3f) | 0x80).toString(16).padStart(2, '0');
+  return [h.slice(0,8), h.slice(8,12), '4'+h.slice(13,16), variant+h.slice(18,20), h.slice(20,32)].join('-');
+}
+const REAL_USER = { key: 'me', id: 'b2fcf3fe-8b7c-44b3-9552-e51ae0ab35dc' };
+const DEMO_USER_KEYS = ['omar','lina','yousef','sara','khaled','nour'];
+const USER_IDS = [REAL_USER.id, ...DEMO_USER_KEYS.map(k => detUuid(`user:${k}`))];
+const SYSTEM_ROLES_ORDER = ['OWNER','ADMIN','EDITOR','VIEWER'] as const;
+const WS_KEYS = ['acme','nova','orbit'];
+const WS_IDS = WS_KEYS.map(k => detUuid(`ws:${k}`));
+const wsRoleId = (wsId: string, role: string) => detUuid(`role:${wsId}:${role}`);
+const sysRoleId = (role: string) => detUuid(`sysrole:${role}`);
+
+/* =========================================================
+   TYPES
+========================================================= */
 
 type PermissionCategory =
   | 'workspace'
@@ -21,10 +47,6 @@ type PermissionSeed = {
   action: string;
   description: string;
 };
-
-/* =========================
-   1. PERMISSION DEFINITIONS
-========================= */
 
 /* =========================
    1. PERMISSION DEFINITIONS
@@ -446,20 +468,18 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ],
 };
 
-/* =========================
-   4. SEED FUNCTION
-========================= */
+/* =========================================================
+   4. SEED STEPS
+========================================================= */
 
-export async function seedAuthZ() {
-  console.log('🌱 Seeding AuthZ system...');
-
+/**
+ * Step 1: permissions — insert PERMISSION_LIST and return name -> id map.
+ */
+async function seedPermissions(): Promise<Map<string, string>> {
   await db.insert(permissions).values(PERMISSION_LIST).onConflictDoNothing();
 
-  const insertedPermissions = await db
-    .select({
-      id: permissions.id,
-      name: permissions.name,
-    })
+  const inserted = await db
+    .select({ id: permissions.id, name: permissions.name })
     .from(permissions)
     .where(
       inArray(
@@ -468,60 +488,162 @@ export async function seedAuthZ() {
       ),
     );
 
-  const permissionNameToId = new Map(
-    insertedPermissions.map((p) => [p.name, p.id]),
-  );
+  return new Map(inserted.map((p) => [p.name, p.id]));
+}
 
-  await db.insert(systemRoles).values(SYSTEM_ROLES).onConflictDoNothing();
+/**
+ * Step 2: systemRoles — insert OWNER/ADMIN/EDITOR/VIEWER with DETERMINISTIC
+ * ids = sysRoleId(name) so they're stable across seeds.
+ */
+async function seedSystemRoles(): Promise<number> {
+  const rows = SYSTEM_ROLES.map((r) => ({
+    id: sysRoleId(r.name),
+    name: r.name,
+    isSystem: true,
+  }));
 
-  const insertedRoles = await db
-    .select({
-      id: systemRoles.id,
-      name: systemRoles.name,
-    })
-    .from(systemRoles)
-    .where(
-      inArray(
-        systemRoles.name,
-        SYSTEM_ROLES.map((r) => r.name),
-      ),
-    );
+  await db.insert(systemRoles).values(rows).onConflictDoNothing();
+  return rows.length;
+}
 
-  const roleNameToId = new Map(insertedRoles.map((r) => [r.name, r.id]));
-
-  const rolePermissionsData: {
-    systemRoleId: string;
-    permissionId: string;
-  }[] = [];
+/**
+ * Step 3: systemRolePermissions — map each system role to its permissions
+ * using ROLE_PERMISSION_MAP (resolving permission ids by name).
+ */
+async function seedSystemRolePermissions(
+  permissionNameToId: Map<string, string>,
+): Promise<number> {
+  const data: { systemRoleId: string; permissionId: string }[] = [];
 
   for (const [roleName, permissionNames] of Object.entries(
     ROLE_PERMISSION_MAP,
   )) {
-    const roleId = roleNameToId.get(roleName);
-    if (!roleId) continue;
+    const systemRoleId = sysRoleId(roleName);
 
     for (const permissionName of permissionNames) {
       const permissionId = permissionNameToId.get(permissionName);
-
       if (!permissionId) continue;
 
-      rolePermissionsData.push({
-        systemRoleId: roleId,
-        permissionId,
+      data.push({ systemRoleId, permissionId });
+    }
+  }
+
+  if (data.length > 0) {
+    await db
+      .insert(systemRolePermissions)
+      .values(data)
+      .onConflictDoNothing();
+  }
+
+  return data.length;
+}
+
+/**
+ * Step 4: iam mirror table — insert one row per USER_IDS.
+ */
+async function seedIam(): Promise<number> {
+  const rows = USER_IDS.map((userId) => ({ userId }));
+  await db.insert(iam).values(rows).onConflictDoNothing();
+  return rows.length;
+}
+
+/**
+ * Step 5: roles — for EACH workspace id, create one per-workspace role per
+ * system role name, with DETERMINISTIC id = wsRoleId(wsId, role) so ws's
+ * workspace_members.authzRoleId matches.
+ */
+async function seedWorkspaceRoles(): Promise<number> {
+  const rows: {
+    id: string;
+    scopeType: 'workspace';
+    scopeId: string;
+    systemRoleId: string;
+    name: string;
+    isSystem: boolean;
+    isDeletable: boolean;
+    isEditable: boolean;
+    createdBy: string;
+  }[] = [];
+
+  for (const wsId of WS_IDS) {
+    for (const role of SYSTEM_ROLES_ORDER) {
+      rows.push({
+        id: wsRoleId(wsId, role),
+        scopeType: 'workspace',
+        scopeId: wsId,
+        systemRoleId: sysRoleId(role),
+        name: role,
+        isSystem: true,
+        isDeletable: false,
+        isEditable: false,
+        createdBy: REAL_USER.id,
       });
     }
   }
 
-  await db
-    .insert(systemRolePermissions)
-    .values(rolePermissionsData)
-    .onConflictDoNothing();
-
-  console.log('✅ AuthZ system seeded successfully');
+  await db.insert(roles).values(rows).onConflictDoNothing();
+  return rows.length;
 }
 
-void seedAuthZ().catch((error) => {
-  console.error('❌ AuthZ seed failed');
-  console.error(error);
-  process.exit(1);
-});
+/**
+ * Step 6: rolePermissions — for each per-workspace role, attach the SAME
+ * permissions its system role has (reuse ROLE_PERMISSION_MAP -> permission ids).
+ */
+async function seedWorkspaceRolePermissions(
+  permissionNameToId: Map<string, string>,
+): Promise<number> {
+  const data: { roleId: string; permissionId: string }[] = [];
+
+  for (const wsId of WS_IDS) {
+    for (const role of SYSTEM_ROLES_ORDER) {
+      const roleId = wsRoleId(wsId, role);
+      const permissionNames = ROLE_PERMISSION_MAP[role] ?? [];
+
+      for (const permissionName of permissionNames) {
+        const permissionId = permissionNameToId.get(permissionName);
+        if (!permissionId) continue;
+
+        data.push({ roleId, permissionId });
+      }
+    }
+  }
+
+  if (data.length > 0) {
+    await db.insert(rolePermissions).values(data).onConflictDoNothing();
+  }
+
+  return data.length;
+}
+
+/* =========================================================
+   5. MAIN
+========================================================= */
+
+async function main(): Promise<void> {
+  console.log('🌱 Seeding AuthZ (shared-contract aligned)...');
+
+  const permissionNameToId = await seedPermissions();
+  const systemRoleCount = await seedSystemRoles();
+  const systemRolePermissionCount =
+    await seedSystemRolePermissions(permissionNameToId);
+  const iamCount = await seedIam();
+  const workspaceRoleCount = await seedWorkspaceRoles();
+  const workspaceRolePermissionCount =
+    await seedWorkspaceRolePermissions(permissionNameToId);
+
+  console.log('✅ AuthZ seeded successfully');
+  console.log('   permissions:              ', permissionNameToId.size);
+  console.log('   system_roles:             ', systemRoleCount);
+  console.log('   system_role_permissions:  ', systemRolePermissionCount);
+  console.log('   iam:                      ', iamCount);
+  console.log('   roles (per-workspace):    ', workspaceRoleCount);
+  console.log('   role_permissions:         ', workspaceRolePermissionCount);
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error('❌ AuthZ seed failed');
+    console.error(error);
+    process.exit(1);
+  });
