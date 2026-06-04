@@ -47,6 +47,10 @@ lerna-debug.log*
 .temp
 .tmp
 
+# Local dev-only redis override (points authz at a local redis container).
+# Not shipped to prod — prod uses the cloud redis from .env.
+docker-compose.override.yml
+
 # Runtime data
 pids
 *.pid

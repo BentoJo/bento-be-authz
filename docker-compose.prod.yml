@@ -1,0 +1,56 @@
+# Production compose for deploying bento-be-authz on the VPS (/apps/bento-be-authz).
+#
+# The image is built + pushed to GHCR by .github/workflows/deploy.yaml.
+# On the VPS you only PULL + run it (no source there) — do NOT add `build:`.
+#
+# Put a `.env` file NEXT TO this compose on the VPS (chmod 600). docker compose
+# auto-loads it for ${...} interpolation AND env_file injects it into containers.
+# Required keys (see .env.example): POSTGRES_*, DATABASE_URL, GRPC_PORT, and the
+# CLOUD redis creds REDIS_HOST / REDIS_PORT / REDIS_PASS.
+#
+# Redis: prod talks to the CLOUD redis configured in .env. There is NO local
+# redis container here — the dev-only docker-compose.override.yml (which points
+# REDIS_HOST at a local container) is gitignored and never shipped to prod.
+#
+# Drizzle migrations are NOT run automatically. Run them manually after deploy,
+# e.g.:  docker compose -f docker-compose.prod.yml run --rm authz-service \
+#          npx drizzle-kit migrate
+# (drizzle-kit is a dev dependency; run from a build/dev context if the prod
+#  image omits it.)
+#
+# authz-service is gRPC-only on 50053 and bound to localhost — front it with a
+# gRPC-aware proxy if it must be reached off-host.
+
+services:
+  authz-db:
+    image: postgres:18
+    container_name: authz-db
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - '127.0.0.1:5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - backend-network
+
+  authz-service:
+    image: ghcr.io/bentojo/bento-be-authz:latest
+    container_name: authz-service
+    restart: always
+    depends_on:
+      - authz-db
+    ports:
+      - '127.0.0.1:50053:50053'
+    env_file:
+      - .env
+    networks:
+      - backend-network
+
+volumes:
+  postgres_data:
+
+networks:
+  backend-network:
+    external: true
