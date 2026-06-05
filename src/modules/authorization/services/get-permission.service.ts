@@ -5,7 +5,11 @@ import {
 } from '../../../shared/types/types';
 import { RpcException } from '@nestjs/microservices';
 import { status as GrpcStatus } from '@grpc/grpc-js';
-import { getPermissionsForRole, getRoleById } from '../../../shared/func';
+import {
+  getPermissionsForRole,
+  getPermissionsForSystemRole,
+  getRoleById,
+} from '../../../shared/func';
 import { validateRequired, validateUUID } from '../../../shared/validations';
 
 @Injectable()
@@ -24,11 +28,21 @@ export class GetPermissionService {
         message: 'Role not found',
       });
     }
-    const permissions = await getPermissionsForRole(roleId);
 
-    return {
-      permissions,
-    };
+    let permissions: string[] = [];
+    if (!existingRole.isSystem) {
+      permissions = await getPermissionsForRole(roleId);
+      return {
+        permissions,
+      };
+    } else {
+      permissions = await getPermissionsForSystemRole(
+        existingRole.systemRoleId!,
+      );
+      return {
+        permissions,
+      };
+    }
   }
 
   private validateInput(roleId: string): void {
