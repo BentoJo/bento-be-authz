@@ -19,7 +19,7 @@ import { RoleScopeTypes } from '../../../shared/types/types';
 @Injectable()
 export class CreateRole {
   async createRole(data: CreateRoleRequest): Promise<CreateRoleResponse> {
-    const { name, scopeType, scopeId, isSystem, createdBy } = data;
+    const { name, scopeType, scopeId, createdBy } = data;
 
     this.validateInput(data);
 
@@ -41,7 +41,6 @@ export class CreateRole {
           name,
           scopeType,
           scopeId,
-          isSystem,
           createdBy,
         },
         tx as typeof db,
@@ -63,7 +62,7 @@ export class CreateRole {
   }
 
   private validateInput(data: CreateRoleRequest): void {
-    const { name, scopeType, scopeId, isSystem, createdBy } = data;
+    const { name, scopeType, scopeId, createdBy } = data;
 
     const nameResult = validateRequired(name, 'Name');
     if (!nameResult.valid) {
@@ -114,13 +113,6 @@ export class CreateRole {
       throw new RpcException({
         code: GrpcStatus.INVALID_ARGUMENT,
         message: scopeIdValidation.message,
-      });
-    }
-
-    if (typeof isSystem !== 'boolean') {
-      throw new RpcException({
-        code: GrpcStatus.INVALID_ARGUMENT,
-        message: 'isSystem must be a boolean',
       });
     }
 
